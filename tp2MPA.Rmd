@@ -1,0 +1,295 @@
+---
+title: "MPA : TP2"
+output: html_document
+date: "2024-10-20"
+---
+
+## Question 1
+
+On a, puisqu'il n'y a aucun élément émis à la fréquence $\theta_1$, et par indépendance des émissions :
+
+\begin{align*}
+p(y|c=1, \theta_1, \theta_2) & = \prod_{i=1}^n p(y_i|c=1, \theta_1, \theta_2) \\& = \prod_{i=1}^n p(y_i|c=1, \theta_2) \\ & = \prod_{i=1}^n \theta_2^{y_i} (1 - \theta_2)^{1-y_i}
+\end{align*}
+
+## Question 2
+
+On a de manière plus générale :
+
+\begin{align*}
+p(y|c>1, \theta_1, \theta_2) & = \prod_{i=1}^{c-1} \theta_1^{y_i} (1 - \theta_1)^{1-y_i}  \prod_{i = c}^n \theta_2^{y_i} (1 - \theta_2)^{1-y_i}
+\end{align*}
+
+## Question 3
+
+$$
+p(\theta) = p(\theta_1, \theta_2, c) = \frac{1}{n}
+$$
+
+$$
+p(\theta_1)=  \int_{\theta_2 = 0}^{1} \sum_{c=1}^n p(\theta) \,d\theta_2 = 1
+$$ Donc $\theta_1$ suit une loi uniforme sur [0, 1].
+
+$$
+\text{Posons } R_c = \frac{p(c|y, \theta_1, \theta_2)}{p(c=1|y, \theta_1, \theta_2)}
+$$
+
+Appliquons la formule de Bayes deux fois pour commencer :
+
+\begin{equation*}
+\begin{split}
+
+R_c & = \underbrace{\dfrac{\text{p}(y \vert c , \theta_1, \theta_2)\text{p}(c \vert \theta_1, \theta_2)}{\text{p}(y \vert \theta_1, \theta_2)}}_{=p(c|y, \theta_1, \theta_2)}   .   \underbrace{\dfrac{\text{p}(y \vert \theta_1, \theta_2)}{\text{p}(y \vert c = 1 , \theta_1, \theta_2)\text{p}(c = 1 \vert \theta_1, \theta_2)}}_{=\dfrac{1}{p(c=1|y, \theta_1, \theta_2)}} \\
+& = \dfrac{\text{p}(c \vert \theta_1, \theta_2)}{\text{p}(c = 1 \vert \theta_1, \theta_2)}.\dfrac{\displaystyle\prod_{i=1}^{c-1} \theta_1^{y_i} (1 - \theta_1)^{1-y_i}  \displaystyle\prod_{i = c}^n \theta_2^{y_i} (1 - \theta_2)^{1-y_i}}{\displaystyle\prod_{i=1}^n \theta_2^{y_i} (1 - \theta_2)^{1-y_i}} \\
+& = \dfrac{\text{p}(c \vert \theta_1, \theta_2)}{\text{p}(c = 1 \vert \theta_1, \theta_2)}  \displaystyle\prod_{i = 1}^{c-1} \dfrac{\theta_1^{y_i} (1 - \theta_1)^{1-y_i}}{\theta_2^{y_i} (1 - \theta_2)^{1-y_i}} \\
+& = \displaystyle\prod_{i = 1}^{c-1} \dfrac{\theta_1^{y_i} (1 - \theta_1)^{1-y_i}}{\theta_2^{y_i} (1 - \theta_2)^{1-y_i}}
+
+\end{split}
+\end{equation*}
+Car On sait que $\theta_1,\theta_2$ et c sont indépendants, et car c suit une loi uniforme par rapport à $\theta_1$ et $\theta_2$. Donc, $\dfrac{\text{p}(c \vert \theta_1, \theta_2)}{\text{p}(c = 1 \vert \theta_1, \theta_2)} = 1$.
+
+Ainsi, on se rend compte que pour un $c$ fixé, on effectue de l'ordre de $c-1$ multiplications. La valeur de $c$ varie entre $1$ et $n$. Donc pour toutes les valeurs de $c$, on effectue (à un facteur près) $\displaystyle\sum_{c = 1}^{n} (c-1)$ multiplications, soit $\displaystyle\sum_{c = 0}^{n-1} c$ multiplications, ou plutôt de l'ordre de $\dfrac{n(n-1)}{2}$ multiplications..
+
+## Question 4
+
+On peut exhiber une relation de récurrence en fonction de $c$.
+
+En effet on peut écrire pour $c \geq 2$ :
+
+\begin{equation*}
+\begin{split}
+
+R_c & = \displaystyle\prod_{i = 1}^{c-1} \dfrac{\theta_1^{y_i} (1 - \theta_1)^{1-y_i}}{\theta_2^{y_i} (1 - \theta_2)^{1-y_i}} \\
+& = \dfrac{\theta_1^{y_{c-1}} (1 - \theta_1)^{1-y_{c-1}}}{\theta_2^{y_{c-1}} (1 - \theta_2)^{1-y_{c-1}}} \displaystyle\prod_{i = 1}^{c-2} \dfrac{\theta_1^{y_i} (1 - \theta_1)^{1-y_i}}{\theta_2^{y_i} (1 - \theta_2)^{1-y_i}} \text{En sortant le dernier terme du produit} \\
+& =  \dfrac{\theta_1^{y_{c-1}} (1 - \theta_1)^{1-y_{c-1}}}{\theta_2^{y_{c-1}} (1 - \theta_2)^{1-y_{c-1}}} R_{c-1}
+
+\end{split}
+\end{equation*}
+
+Ainsi, on effectue $2$ multiplication pour passer d'un rapport à l'autre, ainsi puisqu'il y a $n$ rapports à calculer, on a un ordre de $n$ multiplications au TOTAL, en comptant en plus les nombre de petites multiplications à faire à chaque fois (la constante devant).
+
+## Question 5
+
+### Explication de l'algorithme
+
+$\underline{\text{Donnée}}$ : un signal binaire $y$ qui contient deux parties : une partie avec des bits émis à la fréquence $\theta_1$ et l'autre partie avec des bits émis à la fréquence $\theta_2$, un nombre d'itérations $n_{iter}$.
+
+$\underline{\text{Sortie}}$ : L'indice de changement détecté, la position estimée du point de changement, la borne inférieure de l'intervalle à 75%, la borne supérieure de l'intervalle à 75%, fréquence de "1" avant le point de changement, fréquence de "1" après le point de changement.
+
+-   Étape 1 : On initalise une valeur pour $\theta_1$ et $\theta_2$ arbitrairement.
+
+-   Étape 2 : Pour ces valeurs de $\theta_1$ et de $\theta_2$, on calcule grâce à l'algorithme précédent toutes les valeurs des rapports $R_c$.
+
+-   Étape 3 : On en déduit alors un $c$ probable. On stocke cette valeur.
+
+-   Étape 4 : On tire alors à nouveau des valeurs pour $\theta_1$ et $\theta_2$ à partir de cette valeur de $c$. (On sait que la loi $y^{(i)} \vert ( \theta_i,c)$ suit une loi binomiale, où $y^{(i)}$ correspond à la somme des $y_k$ sur la partie de $y$ émis à la fréquence $\theta_i$ pour $i \in \{1;2\}$ et donc que l'on peut tirer $\theta_i \vert (y^{(i)},c)$ selon une loi bêta).
+
+-   Étape 5 : Retourner à l'étape 2 si le nombre d'itérations demandé n'est pas atteint.
+
+À la fin, on obtient pour chaque $c \in \{1;...;n\}$ le nombre de fois où le tirage de l'étape 3 a fourni ce $c$, en prenant la fréquence relative selon le nombre d'itérations on obtient une approximation de la loi de p$(c\vert y)$.
+
+### Implémentation de l'algorithme
+
+```{r}
+
+gibbs <-function(y_vect, n_iter,theta1_th = -1, theta2_th = -1, changement_th = -1, theta1_init = -1, theta2_init = -1){
+  n <- length(y_vect)
+  # Créations des vecteurs pour stocker
+  theta1_vect <- numeric(n_iter)
+  theta2_vect<- numeric(n_iter)
+  c_vect <- numeric(n_iter)
+
+  # Valeurs initiales
+  # Si une valeur initiale est donnée, on change sinon on prend par défaut thêta 1 et thêta 2 égaux à 1/2
+  if (theta1_init == -1){
+    theta1 <- 0.5
+  }
+  else {  
+    theta1 <- theta1_init
+  }
+  if (theta2_init == -1){
+    theta2 <- 0.5
+  }
+  else {
+    theta2 <- theta2_init
+  }
+  
+  for (i in 1:n_iter) {
+    theta1_vect[i] <- theta1
+    theta2_vect[i] <- theta2
+    prob_c_sachant_y <- numeric(n)
+    # Initialisation de la récurrence
+    prob_c_sachant_y[1] <- 1  
+    # On calcule grâce à l'algorithme de la question précédente toutes les valeurs des rapports R_c
+    for (j in 2:n) {
+      prob_c_sachant_y[j] <- prob_c_sachant_y[j-1] * ((theta1^y_vect[j-1] * (1 - theta1)^(1 - y_vect[j-1])) /
+                                    (theta2^y_vect[j-1] * (1 - theta2)^(1 - y_vect[j-1])))
+    }
+    # Normalisation
+    prob_c_sachant_y <- prob_c_sachant_y / sum(prob_c_sachant_y) 
+    # Echantillonnage de c 
+    c <- sample(1:n,1, prob = prob_c_sachant_y)
+    
+    # Mise à jour de theta1
+    theta1 <- rbeta(1,sum(y_vect[1:c-1])+1,c-sum(y_vect[1:c-1]))      
+
+    # Mise à jour de theta2
+    # Pour éviter la division par 0
+    while (theta2 == 0 || theta2 == 1){
+        theta2 <- rbeta(1,sum(y_vect[c:n])+1,n-c+2-sum(y_vect[c:n]))
+    }
+    c_vect[i]<- c
+  }
+  hist_p_c_sachant_y <-   hist_p_c_sachant_y <- hist(c_vect, freq = FALSE,breaks=n, main = paste("Histogramme réprésentant la loi de c sachant y,",n_iter," itérations"), xlab = "c", ylab = "Allure de p(c|y) à constante près")
+
+  
+  # Obtention des bornes de l'intervalle de confiance à 75% 
+  borne_inf <- quantile(c_vect, probs = 0.25/2)
+  borne_sup <- quantile(c_vect, probs = 1 - 0.25/2)
+  # Obtention du point de changement, en tant que point le plus présent dans l'intervalle de confiance
+  intervalle <- c_vect[c_vect >= borne_inf & c_vect <= borne_sup]
+  intervalle_occurence <- table(intervalle)
+  c_changement <- as.numeric(names(intervalle_occurence)[which.max(intervalle_occurence)])
+  # Calcul de la fréquence de 1 avant et après le changement
+  frequence_avant <- sum(y_vect[1:c_changement-1]/(c_changement-1))
+  frequence_apres <- sum(y_vect[c_changement:n]/(n-c_changement+1))
+
+  # Affichage des données demandées
+  valeur_tableau <- c(c_changement,borne_inf,borne_sup,frequence_avant,frequence_apres)
+  nom_colonnes <- c("Point de changement","Borne inférieure de l'intervalle de confiance à 75%", "Borne supérieure de l'intervalle de confiance à 75%","Fréquence de 1 avant le changement","Fréquence de 1 après le changement")
+  
+  # Si l'on connaît les valeurs théoriques, les ajouter au tableau
+  if (theta1_th != -1){
+      valeur_tableau <- c(valeur_tableau,theta1_th)
+      nom_colonnes <- c(nom_colonnes,"Thêta 1 théorique")
+  }
+  if (theta2_th != -1){
+      valeur_tableau <- c(valeur_tableau,theta2_th)
+      nom_colonnes <- c(nom_colonnes,"Thêta 2 théorique")
+  }
+  if (changement_th != -1){
+      valeur_tableau <- c(valeur_tableau,changement_th)
+      nom_colonnes <- c(nom_colonnes,"Point de changement théorique")
+  }
+  if (theta1_init != -1){
+      valeur_tableau <- c(valeur_tableau,theta1_init)
+      nom_colonnes <- c(nom_colonnes,"Thêta 1 initial pour l'algorithme")
+  }
+  if (theta2_init != -1){
+      valeur_tableau <- c(valeur_tableau,theta2_init)
+      nom_colonnes <- c(nom_colonnes,"Thêta 2 initial pour l'algorithme")
+  }
+  
+  tableau <- data.frame(nom_colonnes,valeur_tableau)
+  names(tableau) <- c("Donnée cherchée","Valeur")
+  tableau
+  
+}
+```
+
+## Question 6
+
+
+## Pour un cas assez évident
+```{r}
+y = c(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0)
+gibbs(y,10000,1,0,16)
+```
+## Pour des y tirés aléatoirements de grande taille (point de changement = 251)
+
+```{r}
+y_gauche <- rbinom(250, size = 1, prob = 1/6)
+y_droite <- rbinom(250, size = 1, prob = 9/10)
+y <- c(y_gauche,y_droite)
+gibbs(y,10000,1/6,9/10,251)
+
+
+y_gauche <- rbinom(250, size = 1, prob = 1/4)
+y_droite <- rbinom(250, size = 1, prob = 2/3)
+y <- c(y_gauche,y_droite)
+gibbs(y,10000,1/4,2/3,251)
+
+y_gauche <- rbinom(250, size = 1, prob = 4/9)
+y_droite <- rbinom(250, size = 1, prob = 5/9)
+y <- c(y_gauche,y_droite)
+gibbs(y,10000,4/9,5/9,251)
+
+y_gauche <- rbinom(250, size = 1, prob = 2/3)
+y_droite <- rbinom(250, size = 1, prob = 2/3)
+y <- c(y_gauche,y_droite)
+gibbs(y,10000,2/3,2/3,251)
+```
+
+## Pour des y tirés aléatoirements de petite taille (point de changement = 26)
+
+```{r}
+y_gauche <- rbinom(25, size = 1, prob = 1/6)
+y_droite <- rbinom(25, size = 1, prob = 9/10)
+y <- c(y_gauche,y_droite)
+gibbs(y,10000,1/6,9/10,26)
+
+y_gauche <- rbinom(25, size = 1, prob = 1/4)
+y_droite <- rbinom(25, size = 1, prob = 2/3)
+y <- c(y_gauche,y_droite)
+gibbs(y,10000,1/4,2/3,26)
+
+y_gauche <- rbinom(25, size = 1, prob = 4/9)
+y_droite <- rbinom(25, size = 1, prob = 5/9)
+y <- c(y_gauche,y_droite)
+gibbs(y,10000,4/9,5/9,26)
+
+y_gauche <- rbinom(25, size = 1, prob = 2/3)
+y_droite <- rbinom(25, size = 1, prob = 2/3)
+y <- c(y_gauche,y_droite)
+gibbs(y,10000,2/3,2/3,26)
+```
+
+## Pour un même y, on essaie différents thêta 1 et thêta 2 initiaux
+```{r}
+y_gauche <- rbinom(250, size = 1, prob = 1/4)
+y_droite <- rbinom(250, size = 1, prob = 2/3)
+y <- c(y_gauche,y_droite)
+
+gibbs(y,10000,1/4,2/3,251, 1/4,2/3)
+gibbs(y,10000,1/4,2/3,251, 0.2,0.7)
+gibbs(y,10000,1/4,2/3,251, 0.1,0.9)
+gibbs(y,10000,1/4,2/3,251, 2/3, 1/4)
+gibbs(y,10000,1/4,2/3,251, 0.9,0.1)
+gibbs(y,10000,1/4,2/3,251,1/2,1/2)
+
+
+```
+
+On remarque que plus la taille du signal initial $y$ est grande, plus la fréquence calculée avant et après le changement est précise. De plus, l'algorithme trouve mieux le point de changement (avec un nombre d'itérations de l'algorithme de 10.000). Ce qui se comprend, étant donné qu'on a plus d'informations sur les signaux émis à fréquence $\theta_1$ et à fréquence $\theta_2$. La convergence de l'algorithme est un peu plus discutable lorsque la taille de la chaine diminue.
+
+De plus, si le nombre d'itérations venait à baisser, on constaterait également ces phénomènes d'imprécisions.
+
+Ajoutons à cela que si les fréquences $\theta_1$ et $\theta_2$ sont très proches, il est difficile pour l'algorithme de trouver un point de changement, ce qui est tout à fait normal car il semble que le signal en entier est émis à la même fréquence.
+
+Enfin, on remarque qu'en changeant les valeurs initiales de $\theta_1$ et $\theta_2$ il y a plusieurs changements, et parfois il arrive de ne pas du tout converger vers le point de changement. 
+Lorsque $\theta_1,theorique$ < $\theta_2,theorique$, l'algorithme a des difficultés à converger lorsque $\theta_1,initial$ > $\theta_2,initial$ (et inversement).
+
+De plus, la difficulté à converger est d'autant plus grande lorsque les $\theta_i$ initiaux se rapprochent des valeurs limites 0 et 1. 
+
+La convergence est bien meilleure lorsque les $\theta_i$ respectifs initiaux sont proches des valeurs théoriques et respectent l'odre des $\theta_i$ théoriques.
+
+## Question 7
+
+```{r}
+
+y= scan("TP2_sequence_1.txt")
+gibbs(y,10000)
+
+y = scan("TP2_sequence_2.txt")
+gibbs(y,10000)
+
+```
+
+Après plusieurs exécutions, l'algorithme envoie en boucle un point de changement à l'indice 43 pour le premier jeu de données et à l'indice 303 pour le second jeu. Cependant, on peut constater quelques variations sur l'intervalle de confiance.
+
+Pour le premier jeu, l'intervalle de confiance varie très peu sur plusieurs exécutions de l'algorithme, cependant, on remarque une plus grande variation des bornes inférieures et supérieures pour le second jeu de l'ordre de 5 unités en moyenne.
+
+
+En ce qui concerne le premier jeu, on observe un pic secondaire plutôt conséquent aux alentours de l'indice 58. On en déduit qu'il est probable qu'il y ait un deuxième changement à cet indice.
+
+Pour le second jeu, on observe un pic principal aux alentours de l'indice 303 et un pic secondaire aux alentours de l'indice 49. De plus, Visuellement, quand on regarde le second jeu, il semble y avoir (au moins) 2 changements (à l'indice 49 et 335). Il y a plus d'émission après le deuxième changement qu'avant le premier changement, on peut alors émettre l'hypothèse que l'algorithme va converger vers une valeur plus proche du deuxième changement qui est plus "lourd".

@@ -1,0 +1,222 @@
+---
+header-includes:
+   - \usepackage{amsmath} 
+output:
+  html_document: default
+  pdf_document: default
+title: "TP 1 de MPA"
+---
+
+# Question 1
+
+$\underline {\text{Loi générative}}$
+
+On a : $P(y|\theta)=\frac{P(y , \theta)}{\underbrace{P(\theta)}_{constante}} \propto P(y|\theta) \propto exp(\frac{-1}{32}(8y² - 4y\theta + \theta²)) \propto exp(\frac{-1}{32}(8y² - 4y\theta))$.
+
+Donc, $P(y|\theta) \propto exp(\frac{-1}{32}(\sqrt8y - \frac{2}{\sqrt8}\theta)^2)$ (on a ajouté une constante pour faire apparaître l'identité remarquable).
+
+D'où, $P(y|\theta) \propto exp(\frac{-1}{4}(y - \frac{1}{4}\theta)^2)$
+
+On aperçoit l'expression d'une loi normale de paramètres $(\frac{\theta}{4},2)$.
+
+Par identification on trouve $P(y|\theta)=\frac{1}{2\sqrt{\pi}} exp(\frac{-1}{4}(y - \frac{1}{4}\theta)^2)$.
+
+Par conséquent, $\boxed{y|\theta \hookrightarrow \mathcal{N}\left(\frac{\theta}{4},2\right)}$ (respectivement les paramètres $m$ et $\sigma²$).
+
+$\underline{\text{Loi à priori}}$
+
+$P(\theta)=\frac{P(y,\theta)}{P(y|\theta)}=\frac{2\sqrt\pi}{16\pi} exp(\frac{-1}{32}(8y^2-4y\theta+\theta^2)+\frac{1}{4}(y-\frac{\theta}{4})^2)$
+
+$P(\theta)=\frac{1}{8\sqrt{\pi}}exp(\frac{-\theta^2}{32}+\frac{\theta^2}{64})=\frac{1}{8\sqrt{\pi}}exp(\frac{-\theta^2}{64})$
+
+D'où, $\boxed{\theta \hookrightarrow \mathcal{N}(0,32)}$.
+
+## Question 2
+
+$\underline {\text{Loi générative}}$
+
+D'après la formule de Bayes on a 
+
+\begin{equation*}
+\begin{split}
+p(\theta \vert y) &= \dfrac{\text{p}(y \vert \theta)\text{p}(\theta)}{\text{p}(y)} \\
+& \propto  \text{p}(y \vert \theta)\text{p}(\theta) \\
+& \propto \operatorname{exp}\left(-\dfrac{1}{4}\left(y - \dfrac{\theta}{4}\right)^2 \right)\operatorname{exp}\left(-\dfrac{\theta^2}{64} \right) \\
+& \propto \operatorname{exp}\left( -\dfrac{1}{4}\left(y^2 - \dfrac{y\theta}{2} + \dfrac{\theta^2}{16}\right) - \dfrac{\theta^2}{64} \right) \\
+& \propto \operatorname{exp}\left( -\dfrac{y^2}{4} + \dfrac{y\theta}{8} - \dfrac{\theta^2}{64} - \dfrac{\theta^2}{64}\right) \\
+& \propto \operatorname{exp}\left(-\dfrac{\theta^2}{32} + \dfrac{y\theta}{8}\right) \\
+& \propto \operatorname{exp}\left(-\dfrac{1}{32} \left(\theta - 2y \right)^2  \right) \hspace{1cm} \text{(Mise sous forme canonique)}
+\end{split}
+\end{equation*}
+
+La loi de $\theta\vert y$ est proportionnelle à une loi normale de paramètre $\mathcal{N}(2y,16)$.
+Pour déterminer la constante $K$ réelle telle que p$(\theta\vert y) = K \operatorname{exp}\left(-\dfrac{1}{32} \left(\theta - 2y \right)^2  \right)$, on utilise la formule fournie dans l'énoncé, on sait que pour une loi normale de paramètre $\mathcal{N}(m,\sigma^2)$, la constante vaut $\dfrac{1}{\sqrt{2\pi\sigma^2}}$, ainsi $K = \dfrac{1}{\sqrt{32\pi}}$. Nous pouvons aussi utiliser la condition de normalisation suivante : 
+
+$$ \int_{-\infty}^{+\infty}\text{p}(\theta\vert y)d\theta = 1 $$
+
+Et on a d'autre part : 
+
+\begin{equation*}
+\begin{split}
+
+\int_{-\infty}^{+\infty}\text{p}(\theta\vert y)d\theta & = K \int_{-\infty}^{+\infty} \operatorname{exp}\left(-\dfrac{1}{32} \left(\theta - 2y \right)^2  \right) d\theta\\
+& \stackrel{u = \theta - 2y}{=} K \int_{-\infty}^{+\infty} \operatorname{exp}\left(-\dfrac{1}{32} u^2  \right) du\\
+& = K \sqrt{32\pi} \\
+& = 1
+
+\end{split}
+\end{equation*}
+
+On retrouve bien la même valeur de $K$. Par conséquent, $\boxed{\theta|y \hookrightarrow \mathcal{N}\left(2y,16\right)}$
+
+$\underline{\text{Loi à priori}}$
+
+\begin{equation*}
+\begin{split}
+p(y) &= \dfrac{\text{p}(y,\theta)}{\text{p}(\theta\vert y)} \\
+& =  \dfrac{\dfrac{1}{16\pi}\operatorname{exp}\left(-\dfrac{1}{32}\left(8y^2 - 4y\theta + \theta^2 \right)\right) }{\dfrac{1}{\sqrt{32\pi}}\operatorname{exp}\left(-\dfrac{1}{32}\left(\theta - 2y\right)^2\right)} \\
+& = \dfrac{4\sqrt{2}}{16\pi}\operatorname{exp}\left(-\dfrac{y^2}{4} + \dfrac{y\theta}{8} - \dfrac{\theta^2}{32} + \dfrac{\theta^2}{32} - \dfrac{y\theta}{8} + \dfrac{y^2}{8}\right) \\
+& = \dfrac{1}{\sqrt{8\pi}}\operatorname{exp}\left(-\dfrac{y^2}{8}\right)
+
+\end{split}
+\end{equation*}
+
+D'où, $\boxed{y\hookrightarrow \mathcal{N}(0,4)}$.
+
+## Question 3
+
+```{r}
+# On génère des thetas à l'aide du résultat précédent
+theta <- rnorm(1000,0,sqrt(32))
+# On génère des y sachant les valeurs de theta
+generative <- rnorm(1000,theta/4,sqrt(2))
+
+# On assemble les résultats pour former des générations du couple (y, theta)
+couple <- cbind(generative,theta)
+```
+
+## Question 4
+
+On a :
+
+\begin{equation*}
+\begin{split}
+
+E[\theta \vert y] & = \int_{-\infty}^{+\infty} \theta \text{p}(\theta\vert y) d\theta \\
+& = \dfrac{1}{\sqrt{32\pi}} \int_{-\infty}^{+\infty} \theta \operatorname{exp}\left(-\dfrac{u^2}{32}\right) \\
+& \stackrel{u = \theta - 2y}{=} \dfrac{1}{\sqrt{32\pi}} \int_{-\infty}^{+\infty} (u+2y) \operatorname{exp}\left(-\dfrac{u^2}{32}\right)du
+\\
+& = \dfrac{1}{\sqrt{32\pi}} \left(\underbrace{\int_{-\infty}^{+\infty} u\operatorname{exp}\left(-\dfrac{u^2}{32}\right)du}_{= 0 \text{ car fonction impaire}} +  \underbrace{\int_{-\infty}^{+\infty} 2y\operatorname{exp}\left(-\dfrac{u^2}{32}\right)du}_{= 2y \sqrt{32\pi}}  \right) \\
+& = 2y
+\end{split}
+\end{equation*}
+
+## Question 5
+```{r}
+theta <- rnorm(1000,0,sqrt(32))
+generative <- rnorm(1000,theta/4,sqrt(2))
+
+plot(generative,theta, col='grey')
+lines(generative,2*generative, col='blue')
+```
+
+## Question 6
+
+```{r}
+theta <- rnorm(1000,0,sqrt(32))
+generative <- rnorm(1000,theta/4,sqrt(2))
+
+plot(generative,theta, col='grey')
+lines(generative,2*generative, col='blue')
+
+reg_lin <- lm(theta ~ generative)
+
+abline(reg_lin, col='orange')
+```
+
+On constate une forte proximité entre les deux courbes. Le résultat théorique est à priori validé par les tirages aléatoires.
+
+
+## Question 7
+
+```{r}
+
+theta_vector = c()
+
+theta <- rnorm(100000,0, sqrt(32))
+generative <- rnorm(100000,theta/4,sqrt(2))
+theta_vector <- theta[generative > 1.99 & generative < 2.01]
+```
+
+## Question 8 
+
+```{r}
+hist(theta_vector, main = "Histogramme des valeurs de theta retenues avec l'algorithme de rejet",xlab ="theta", ylab = "Fréquence de theta")
+
+```
+
+L'histogramme montre que les valeurs de $\theta$ les plus fréquentes se situent aux environs de 4. Ceci s'explique par fait que y vaut approximativement 2 et car la loi à posteriori ($\theta$ \| y) a une espérance de 2y.
+
+
+## Question 9
+
+La loi de vraissemblance fournit la donnée de $y$ en fonction du paramètre $\theta$. Tandis que la loi a posteriori fourni le comportement de $\theta$ après avoir observé $y$. Ainsi, toute l'information nécessaire sur la relation de $y$ et $\theta$ est dans $y|\theta$ et $\theta|y$.
+
+## Question 10
+```{r}
+n_total <- 2000
+n_debut <- 1000
+
+# Initialisation
+theta_vecteur <- numeric(n_total)
+y_vecteur <- numeric(n_total)
+theta_vecteur[1] <- 0
+
+# Échantillonnage de Gibbs
+for (i in 2:n_total) {
+    y_vecteur[i] <- rnorm(1, mean = theta_vecteur[i-1]/4, sd = 2)
+    
+    theta_vecteur[i] <- rnorm(1, mean = 2*y_vecteur[i], sd = 4)
+}
+
+
+# Tracé de θ (sans valeurs de début)
+plot(theta_vecteur[n_debut:n_total], type="l", col="blue", 
+     main="Évolution de θ (1000 dernières itérations)", 
+     xlab="Itérations", ylab="θ")
+
+# Tracé de y (sans valeurs de début)
+plot(y_vecteur[n_debut:n_total], type="l", col="red", 
+     main="Évolution de y (1000 dernières itérations)", 
+     xlab="Itérations", ylab="y")
+
+# Histogramme de θ
+hist(theta_vecteur[n_debut:n_total], breaks=30, col="lightblue", 
+     main="Distribution de θ", xlab="θ", ylab= "Fréquence")
+
+# Histogramme de y
+hist(y_vecteur[n_debut:n_total], breaks=30, col="pink", 
+     main="Distribution de y", xlab="y",ylab = "Fréquence")
+
+
+cat("Statistiques pour θ (toutes les valeurs):\n")
+cat("Moyenne:", mean(theta_vecteur[0:n_total]), "\n")
+cat("Écart-type:", sd(theta_vecteur[0:n_total]), "\n")
+
+cat("Statistiques pour θ (1000 dernières valeurs):\n")
+cat("Moyenne:", mean(theta_vecteur[n_debut:n_total]), "\n")
+cat("Écart-type:", sd(theta_vecteur[n_debut:n_total]), "\n")
+
+cat("\nStatistiques pour y (toutes les valeurs):\n")
+cat("Moyenne:", mean(y_vecteur[0:n_total]), "\n")
+cat("Écart-type:", sd(y_vecteur[0:n_total]), "\n")
+
+cat("\nStatistiques pour y (1000 dernières valeurs):\n")
+cat("Moyenne:", mean(y_vecteur[n_debut:n_total]), "\n")
+cat("Écart-type:", sd(y_vecteur[n_debut:n_total]), "\n")
+
+```
+
+
+
+

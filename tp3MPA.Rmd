@@ -1,0 +1,379 @@
+---
+title: "MPA : TP3"
+output: html_document
+date: "2024-11-22"
+---
+
+# PARTIE 1
+
+## Question 1
+
+On calcule $p(y \vert \theta)$.
+
+On a :
+
+\begin{align*}
+
+p(y \vert \theta) & = \displaystyle \prod_{i = 1}^{n} p(y_i \vert \theta) \\
+& = \displaystyle \prod_{i = 1}^{n} \dfrac{e^{-\theta}}{y_i!}\theta^{y_i} \\
+& = e^{-n\theta} \displaystyle \prod_{i = 1}^{n} \dfrac{\theta^{y_i}}{y_i!}
+
+\end{align*}
+
+## Question 2
+
+Par la formule de Bayes,
+
+\begin{align*}
+
+p(\theta \vert y) & = \dfrac{p(y \vert \theta)p(\theta)}{p(y)} \\
+& \propto p(y\vert \theta)p(\theta) \\
+& \propto \dfrac{p(y\vert \theta)}{\theta} \\
+& \propto e^{-n\theta}  \dfrac{1}{\theta} \displaystyle \prod_{i = 1}^{n} \dfrac{\theta^{y_i }}{y_i!} \\
+& \propto e^{-n\theta} \theta^{\displaystyle \sum_{i=1}^{n} \left(y_i\right) - 1}
+
+\end{align*}
+
+La distribution Gamma peut être représentée avec les paramètres $\alpha$ et $\beta$ par : $$ f(\theta;\alpha,\beta) = \theta^{\alpha-1}\dfrac{\beta^{\alpha}e^{-\beta \theta}}{\Gamma(\alpha)}$$
+
+Ainsi, on reconnaît une loi Gamma de paramètre Gamma$\left(\displaystyle \sum_{i=1}^{n} y_i, n \right)$
+
+L'espérance d'une loi Gamma vaut $\frac{\alpha}{\beta}$, ici $\mathbb{E}(\theta|y)=\frac{\sum_{i=1}^{n} y_i}{n}$
+
+## Question 3
+
+Algorithme de Metropolis-Hastings :
+
+On initialise une valeur quelconque de $\theta^{(0)}$.\
+À chaque itération, on tire une valeur $\theta^*$ selon une loi instrumentale que l'on note $q(\theta^t \vert \theta^*)$.\
+On calcule un ratio $r = \dfrac{\pi(\theta^*)q(\theta^* \vert \theta^{t})}{\pi(\theta^t)q(\theta^{t} \vert \theta^*)}$.\
+Alors, avec la probabilité $r$ (probabilité 1 si $r \geq 1$), on prend $\theta^{t+1} = \theta^*$, sinon on prend $\theta^{t}$. On continue pour un nombre d'itérations donné.
+
+```{r}
+
+#Initialisation
+
+theta0 <- 1
+Niterations <- 10000
+n <- 20
+
+loi_instrumentale <- function(thetat,thetastar){
+  # L'énoncé suggère d'utiliser une loi exponentielle
+  return(dexp(thetastar, 1 / thetat))
+}
+
+loi_theta_sach_y_prop <- function(theta,y){
+  return(exp(-n*theta) * theta^(sum(y) - 1) * n^(sum(y)))
+}
+
+metropolis_hastings <- function(Niterations, theta_initial, y){
+  
+  theta <- numeric(Niterations)
+  theta[1] <- theta_initial
+  
+  for (i in 2:Niterations){
+    
+    # L'énoncé suggère d'utiliser une loi exponentielle
+    thetastar <- rexp(1, rate = 1 / theta[i - 1])
+    ratio <- ( loi_theta_sach_y_prop(thetastar,y)*loi_instrumentale(thetastar,theta[i-1]) ) / (loi_theta_sach_y_prop(theta[i-1],y) * loi_instrumentale(theta[i-1],thetastar))
+    # Sélection d'un nouveau theta ^ t+1
+    if (runif(1) < min(1,ratio)){
+      theta[i] <- thetastar 
+    }
+    else{
+      theta[i] <- theta[i-1]
+    }
+    
+  }
+  fin_periode_chauffe = floor(Niterations/10)
+  # Trajectoire de la chaîne
+  plot(fin_periode_chauffe:Niterations,theta[fin_periode_chauffe:Niterations], cex = .5, pch = 19, xlab = "Itérations", ylab = "Valeur du theta", main = "Trajectoire de la chaîne (après la période de chauffe)")
+  points(fin_periode_chauffe:Niterations, theta[fin_periode_chauffe:Niterations], type = "l", lty = 2, lwd = 2, col = "grey")
+  
+  return(theta[fin_periode_chauffe:Niterations])
+}
+
+y_test <- rpois(n, lambda = 1)
+
+theta_estime <- metropolis_hastings(Niterations, 1, y_test)
+
+```
+
+## Question 4
+
+```{r}
+
+cat("Moyenne a posteriori de theta :", mean(theta_estime), "\n")
+cat("Médiane a posteriori de theta :", median(theta_estime), "\n")
+cat("Intervalle de crédibilité de 95% :", quantile(theta_estime, c(0.025, 0.975) ), "\n")
+
+```
+
+## Question 5
+
+```{r}
+hist(theta_estime, xlab = "theta", main = "Distribution a posteriori de theta", probability = TRUE )
+x <- seq(0, max(theta_estime),length = Niterations)
+# La loi obtenue à la question 2 est une loi gamma
+y <- dgamma(x, shape = sum(y_test), rate = n)
+lines(x, y, col = "red", lwd = 2)
+```
+
+## Question 6
+
+Supposons que l'on possède des données $y$.
+
+Par soucis de lisibilité, on remplace dans la suite le terme $\displaystyle \sum_{i=1}^{n}y_i$ par $\sum y_i$.
+
+On a :
+
+\begin{align*}
+
+p(\tilde{y} \vert y) & = \displaystyle \int_{\mathbb{R}_{+}} p(\tilde{y} \vert \theta, y)p(\theta \vert y) \operatorname{d}\theta \\
+& = \displaystyle \int_{\mathbb{R}_{+}} \dfrac{e^{-\theta} \theta^{\tilde{y}}}{\tilde{y}!}.\dfrac{n^{ \sum y_i}\theta^{\sum y_i - 1}e^{-n\theta}}{\Gamma(\sum y_i)} \operatorname{d}\theta \\
+& = \dfrac{n^{ \sum y_i}}{\tilde{y}!\Gamma(\sum y_i) } \displaystyle \int_{\mathbb{R}_{+}} e^{-\theta} \theta^{\tilde{y}}.\theta^{\sum y_i - 1}e^{-n\theta} \operatorname{d}\theta \\
+& = \dfrac{n^{ \sum y_i}}{\tilde{y}!\Gamma(\sum y_i) } \displaystyle \int_{\mathbb{R}_{+}} e^{-(n+1)\theta} \theta^{\tilde{y} + \sum y_i - 1} \operatorname{d}\theta \\
+& = \dfrac{n^{ \sum y_i}}{\tilde{y}!\Gamma(\sum y_i) (n+1)^{\tilde{y} + \sum y_i} } \displaystyle \int_{\mathbb{R}_{+}} e^{-\theta} \theta^{\tilde{y} + \sum y_i - 1} \operatorname{d}\theta \ \text{(Changement de variable } u = (n+1)\theta) \\
+& = \dfrac{n^{ \sum y_i}\Gamma(\tilde{y} + \sum y_i )}{\tilde{y}!\Gamma(\sum y_i) (n+1)^{\tilde{y} + \sum y_i}}
+\end{align*}
+
+Or on sait que $\dfrac{\Gamma(\tilde{y} + \sum y_i )}{\tilde{y}!\Gamma(\sum y_i)} = \binom{\tilde{y} + \sum y_i - 1}{\tilde{y}}$
+
+Ainsi :
+
+\begin{align*}
+
+p(\tilde{y} \vert y) & = \dfrac{n^{ \sum y_i}\Gamma(\tilde{y} + \sum y_i )}{\tilde{y}!\Gamma(\sum y_i) (n+1)^{\tilde{y} + \sum y_i}} \\
+& = \binom{\tilde{y} + \sum y_i - 1}{\tilde{y}} \dfrac{n^{ \sum y_i}}{(n+1)^{\tilde{y} + \sum y_i}} \\
+& = \binom{\tilde{y} + \sum y_i - 1}{\tilde{y}}.\left(\dfrac{1}{n+1}\right)^{\tilde{y}}.\left(\dfrac{n}{n+1}\right)^{\sum y_i}
+\end{align*}
+
+La loi binomiale négative de paramètre $\mathcal{NB}(n,p,q = 1-p)$ a pour fonction de masse $P(X = k) = \binom{k + n - 1}{k}p^n q^k$
+
+Avec ici $k = \tilde{y}$. On identifie donc une loi binomiale négative de paramètre $\mathcal{NB}\left(\sum y_i, \dfrac{n}{n+1}\right)$.
+
+```{r}
+
+algorithme_y_tilde <- function(y, N) {
+  
+  r <- sum(y)
+  p <- n / (n + 1)
+  y_tilde <- rnbinom(N, size = r, prob = p)
+  
+  return(y_tilde)
+}
+
+y_tilde <- algorithme_y_tilde(y_test,1000)
+
+hist(y_tilde, xlab = "y tilde", main = "Occurences des composantes de y_tilde", probability = TRUE, breaks = 10 )
+hist(y_test, xlab = "y original", main = "Occurences des composantes de y", probability = TRUE, breaks = 10 )
+cat("La moyenne des prévisions vaut ", mean(y_test))
+cat("\nL'écart-type des prévisions vaut ", sd(y_test))
+cat("\nLa moyenne des observations vaut ", mean(y_tilde))
+cat("\nL'écart-type des observations vaut ", sd(y_tilde))
+```
+On peut voir que la distribution des $\tilde{y}$ est plus dispersée que celle du vecteur initial d'observations.
+
+# PARTIE 2
+## Question 1
+
+On a :
+$$
+\begin{align*}
+p(y \vert z, \theta) &= \prod_{i=1}^{n} p(y_i \vert z_i, \theta) \\
+p(y \vert z, \theta) &= \prod_{i=1}^{n} \frac{(\theta_{z_i})^{y_i} e^{-\theta_{z_i}}}{y_i !} \\
+p(y \vert z, \theta) &= \prod_{k=1}^{K} \prod_{i \in I_k}  \frac{(\theta_{k})^{y_i} e^{-\theta_{k}}}{y_i !} \\
+\end{align*}
+$$
+
+## Question 2 
+
+On pose pour tout k, $card(I_k) = \vert I_k \vert$
+$$
+\begin{align*}
+p((z,\theta) \vert y) &= \frac{p(y, z, \theta)}{p(y)} \\
+p((z,\theta) \vert y) &= \frac{p(y\vert (z, \theta)) p((z, \theta))}{p(y)} \\
+p((z,\theta) \vert y) &= \frac{p(y\vert (z, \theta)) p(z) p(\theta)}{p(y)} && \text{Par indépendance du couple}\\
+p((z,\theta) \vert y) &\propto p(\theta)p(y \vert (z, \theta)) \\
+p((z,\theta) \vert y) &\propto (\prod_{k=1}^{K} \frac{1}{\theta_k}) \prod_{k=1}^{K} \prod_{i \in I_k}  \frac{(\theta_{k})^{y_i} e^{-\theta_{k}}}{y_i !}\\
+p((z,\theta) \vert y) &\propto (\prod_{k=1}^{K} \frac{1}{\theta_k}) \prod_{k=1}^{K} \theta_{k}^{\sum_{i \in I_k} y_i} \frac{e^{-\theta_k \vert I_k \vert}}{\prod_{i \in I_k} y_i !}\\
+p((z,\theta) \vert y) &\propto\prod_{k=1}^{K} \theta_{k}^{(\sum_{i \in I_k} y_i) -1} e^{-\theta_k \vert I_k \vert}\\
+\end{align*}
+$$
+
+On reconnaît une loi Gamma de paramètres $Gamma(\sum_{i \in I_k} y_i, \vert I_k \vert)$ pour chaque $(z, \theta_k \vert y)$.
+On en déduit que la loi a posteriori du vecteur de variables $(z,\theta)$ peut être décrite comme suivant la loi $\prod_{i=1}^{K} Gamma(\sum_{i \in I_k}^K y_i, \vert I_k \vert)$
+
+## Question 3 :
+
+On a : 
+$$
+\begin{align*}
+p(z_i = k \vert y, \theta) &= \frac{p(y_i \vert z_i = k , \theta)p(z_i = k \vert \theta)}{p(y_i \vert \theta)} \\ \text{par mutuelle indépendance des $(\theta_k, z_i)$, on a    }
+p(z_i = k \vert y, \theta) &\propto p(y_i \vert z_i = k , \theta)\underbrace{p(z_i = k)}_{\propto 1} \\
+p(z_i = k \vert y, \theta) &\propto \theta_{k}^{y_i} e^{-\theta_{k}}
+\end{align*}
+$$
+
+La constante de normalisation se trouve en divisant par la somme des probabilités $\sum_{k=1}^{K}p(z_i = k\vert y, \theta)$.
+On a donc, $p(z_i = k \vert y, \theta) = \frac{\theta_{k}^{y_i} e^{-\theta_{k}}}{\sum_{n=1}^{K}\theta_{n}^{y_i} e^{-\theta_{n}}}$.
+
+## Question 4 :
+On a :
+$$
+\begin{align*}
+P(\theta_k \vert \theta_{-k}, y, z) &\propto p(\theta_k \vert y_k,z_k) && \text{car $\theta_k$ ne dépend pas de $\theta_{-k}$  ni  de  $y_{-k}$ ni  de $z_{-k}$ } \\ 
+P(\theta_k \vert \theta_{-k}, y, z) &\propto p(y_k \vert z_k, \theta_k) p(\theta_k \vert z_k) \\
+P(\theta_k \vert \theta_{-k}, y, z) &\propto \frac{p(y_k \vert z_k, \theta_k)}{\theta_k} \\
+P(\theta_k \vert \theta_{-k}, y, z) &\propto \frac{1}{\theta_k} \prod_{i \in I_k}  \frac{(\theta_{k})^{y_i} e^{-\theta_{k}}}{y_i !} \\
+P(\theta_k \vert \theta_{-k}, y, z) &\propto \frac{1}{\theta_k} \prod_{i \in I_k} (\theta_{k})^{y_i} e^{-\theta_{k}} \\
+P(\theta_k \vert \theta_{-k}, y, z) &\propto \theta_{k}^{(\sum_{i \in I_k} y_i) -1} e^{-n_k \theta_{k}} \\
+P(\theta_k \vert \theta_{-k}, y, z) &\propto \theta_{k}^{n_k \bar{y_k} -1} e^{-n_k \theta_{k}}
+\end{align*}
+$$
+
+## Question 5 : 
+
+Pour l'algorithme d'échantillonnage de Gibbs pour la loi à postériori $(z,\theta)$. On commence par initialiser le vecteur $\theta⁰$ arbitrairement. On génère ensuite $y$ et $z⁰$.
+Pour une itération, on génère d'abord les $\theta_k$ selon la loi $Gamma(n_k\bar{y_k}, n_k)$ de la question 4. On simule le vecteur $z$ selon la loi conditionnelle de la question 3.
+
+```{r}
+# Initialisation
+n <- 2000
+K <- 50
+theta_0 <- sample(1:10, size = K, replace = TRUE)
+y <- rpois(n,theta_0)
+
+
+# Paramètres à l'itération t
+theta_t <- sample(1:10, size = K, replace = TRUE)
+
+z_t <- integer(n)
+
+# Simuler z_i pour chaque y_i
+for (i in 1:n) {
+  # Calcul des poids pour chaque k
+  probs <- theta_t^y[i] * exp(-theta_t)
+
+  
+  # Simuler z_i à partir des probabilités
+  z_t[i] <- sample(1:K, size = 1, prob = probs)
+}
+
+# itération t+1
+for (k in 1:K){
+  I_k <- vector("list", K)  # Liste pour regrouper les y par cluster
+  for (i in 1:K) {
+    I_k[[i]] <- y[z_t == i]  # Ajoute les y[j] où z[j] == i
+  }
+  n_k <- length(I_k[[k]])  # Nombre d'observations dans le cluster k
+  sum_y_k <- sum(I_k[[k]])  # Somme des y[j] dans le cluster k
+  theta_t[k] <- rgamma(1,sum_y_k,n_k)
+}
+
+for (i in 1:n) {
+  # Calcul des poids pour chaque k
+  probs <- theta_t^y[i] * exp(-theta_t)
+
+  
+  # Simuler z_i à partir des probabilités
+  z_t[i] <- sample(1:K, size = 1, prob = probs)
+}
+
+```
+
+## Question 6
+
+On peut estimer l'espérance de $\theta_k$ sachant $y$ en prenant la moyenne empirique des simulations de $\theta_k$, en effectuant l'algorithme de la question 5 un grand nombre de fois.
+
+
+On estime la proportion de chacune des composantes du mélange en effectuant le ratio entre le nombre de valeurs dans le cluster k $\in {1,...,K}$ et le nombre total de valeurs.
+
+
+## Question 7
+
+```{r}
+hist(theta_0)
+hist(y)
+```
+
+
+
+
+
+```{r}
+# Exemple de données y
+n <- 100
+y <- rpois(n, lambda = 5)  # Générer les observations y (loi de Poisson)
+
+# Fonction de Gibbs pour le modèle de mélange de Poisson
+gibbs <- function(K, N_iter, y) {
+  theta0 <- rgamma(K, shape = 1, rate = 1) # Initialisation des valeurs de theta
+  theta <- theta0 
+  z <- sample(1:K, size = n, replace = TRUE)  # Initialisation des clusters z
+  
+  # Algorithme de Gibbs
+  for (t in 1:N_iter) {
+    # Mise à jour des paramètres theta
+    for (k in 1:K) {
+      n_k <- sum(z == k)  # Nombre d'observations dans le cluster k
+      sum_y_k <- sum(y[z == k])  # Somme des y[j] dans le cluster k
+      theta[k] <- rgamma(1, shape = sum_y_k, rate = n_k)  # Mettre à jour theta_k
+    }
+    
+    # Mise à jour des assignations z
+    for (i in 1:n) {
+      probs <- theta^y[i] * exp(-theta)  # Calcul des probabilités
+      probs <- probs / sum(probs)  # Normalisation pour obtenir des probabilités valides
+      z[i] <- sample(1:K, size = 1, prob = probs)  # Assigner z_i à un cluster
+    }
+  }
+  
+  return(list(z = z, theta = theta,theta0=theta0))  # Retourner les résultats
+}
+
+# Essai de plusieurs valeurs de K
+K_values <- c(1, 2, 3, 5)  # Valeurs de K à tester
+N_iter <- 1000  # Nombre d'itérations de l'algorithme Gibbs
+
+# Définir les couleurs pour chaque courbe
+colors <- c("red", "green", "blue", "purple")
+
+# Initialiser la disposition des graphiques (4 graphiques côte à côte)
+par(mfrow = c(2, 2))  # 2 lignes, 2 colonnes pour les graphiques
+
+# Tracer les lois de mélange pour différentes valeurs de K
+for (i in 1:length(K_values)) {
+  K <- K_values[i]
+  result <- gibbs(K, N_iter, y)  # Appliquer Gibbs pour chaque valeur de K
+  theta <- result$theta
+  
+  # Fonction pour calculer la densité de la loi de mélange estimée par Gibbs
+  mix_density <- function(x) {
+    dens <- 0
+    for (k in 1:K) {
+      dens <- dens + 0.1*dgamma(x, shape = sum(y[result$z == k]), rate = sum(result$z == k)) * mean(result$z == k)
+    }
+    return(dens)
+  }
+  
+  # Tracer l'histogramme des données
+  hist(y, breaks = 30, main = paste("Mélange de Poisson pour K =", K), 
+       xlab = "y", col = rgb(0.2, 0.5, 0.8, 0.5), border = "white", freq = FALSE)
+  
+  # Superposer la loi de mélange estimée
+  curve(mix_density(x), from = min(y), to = max(y), col = colors[i], lwd = 2, add = TRUE)
+}
+
+# Ajouter une légende pour identifier les différentes courbes
+legend("topright", legend = paste("K =", K_values), col = colors, lwd = 2)
+
+result2 <- gibbs(50,1000,y)
+hist(result2$theta)
+hist(result2$theta0)
+
+
+```
+
+
+
